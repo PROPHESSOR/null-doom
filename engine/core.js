@@ -1,82 +1,64 @@
 /**
  * NULL Engine
- * 
- * @module core 
- * @author kod.connect
+ *
+ * @module core
+ * @author kod.connect & PROPHESSOR
  *
  */
 
-var core = new function() {
-    
-    var t    = this;
-    var tmod = 0; // current loading mod at loading stage
-    
-    var module = function(n){
-        var c = 0;
-        
-        for (var i in t.modules) {
-            if (c == n) return i;
-            c++;
+ND.Core = new class Core {
+    constructor () {
+        this.tmod = 0; // current loading mod at loading stage
+
+        this.modules = ['tools', 'commands', 'gameplay', 'input', 'objects', 'player', 'interface', 'render', 'sound', 'wad'
+        ];
+
+        {
+            this.constants = this.constants.bind(this);
+            this.include = this.include.bind(this);
+            this.init = this.init.bind(this);
+            this.loadNext = this.loadNext.bind(this);
         }
-        
-        return -1;
-    };
-    
-    t.constants = function(constants){
-        
-        for (var i in constants) { 
-            
-            window[constants[i]] = i;
-        };
-    };
-    
-    t.modules = {
-        t_ : 'tools',
-        c_ : 'commands',
-        g_ : 'gameplay',
-        i_ : 'input',
-        o_ : 'objects',
-        p_ : 'player',
-        u_ : 'interface',
-        r_ : 'render',
-        s_ : 'sound',
-        w_ : 'wad'
-    };
-    
-    t.include = function( f, callback ) {
-        
-        $.getScript( f )
-        .done(function( script, textStatus ) {
-            
-            if (typeof callback == 'function'){
-                callback();
-            }
-        })
-        .fail(function( jqxhr, settings, exception ) {
-            console.log(jqxhr, exception );
-        });
-            
-    };
-    
-    t.init = function(){
-        console.log('....core.init()');            
-        
-        t.loadNext();
-    };
-    
-    t.loadNext = function(){
-   
-        var m = module(tmod);
-        
-        if (m != -1) {
-        
-            window[m] = {}; 
-            console.log('..loading engine/'+ core.modules[m] +'.js');
-            core.include('engine/'+ core.modules[m] +'.js');
-            
-            tmod++;
+    }
+
+    init () {
+        console.log('....ND.Core.init()');
+
+        this.loadNext();
+    }
+
+    /** Задаёт константы
+     * @param  {object} constants - key: value
+     */
+    constants (constants) {
+        Object.assign(ND.Const, constants);
+    }
+
+    /** Подключает внешний js файл
+     * @param  {string} f - путь
+     * @param  {function} callback - cb
+     */
+    include (f, callback) {
+        $.getScript(f)
+            .done((/* script, textStatus */) => {
+
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            })
+            .fail((jqxhr, settings, exception) => {
+                console.log(jqxhr, exception);
+            });
+    }
+
+
+    loadNext () {
+        const m = this.modules[this.tmod++];
+
+        if (m) {
+            ND[m] = {};
+            console.log(`..loading engine/${this.modules[m]}.js`);
+            this.include(`engine/${this.modules[m]}.js`, this.loadNext);
         }
-    };  
-    
-    window.onload = t.init;    
-};
+    }
+}();
